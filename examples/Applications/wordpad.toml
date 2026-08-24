@@ -1,0 +1,123 @@
+[config.app]
+name = "SWINGSet WordPad"
+entry-window = "main"
+
+[config.backend]
+preferred = "auto"
+
+[commands.new]
+text = "&New"
+[commands.open]
+text = "&Open..."
+[commands.save]
+text = "&Save"
+[commands.save-as]
+text = "Save &As..."
+[commands.exit]
+text = "E&xit"
+[commands.select-all]
+text = "Select &All"
+[commands.find-next]
+text = "&Find Next"
+[commands.bold]
+text = "&Bold"
+[commands.italic]
+text = "&Italic"
+[commands.underline]
+text = "&Underline"
+[commands.about]
+text = "&About"
+
+[menu-bars.main]
+menus = ["file", "edit", "format", "help"]
+
+[menus.file]
+text = "&File"
+items = ["new", "open", "save", "save-as", "-", "exit"]
+[menus.edit]
+text = "&Edit"
+items = ["select-all", "find-next"]
+[menus.format]
+text = "F&ormat"
+items = ["bold", "italic", "underline"]
+[menus.help]
+text = "&Help"
+items = ["about"]
+
+[widgets.main]
+type = "Window"
+title = "SWINGSet WordPad"
+menu-bar = "main"
+children = ["chrome", "editor", "status"]
+
+[widgets.chrome]
+type = "VBox"
+constraint = "north"
+children = ["commands", "formatting"]
+
+[widgets.commands]
+type = "ToolBar"
+children = ["new-button", "open-button", "save-button", "find-label", "find", "next-button"]
+
+[widgets.new-button]
+type = "Button"
+command = "new"
+[widgets.open-button]
+type = "Button"
+command = "open"
+[widgets.save-button]
+type = "Button"
+command = "save"
+[widgets.find-label]
+type = "Label"
+text = "Find"
+[widgets.find]
+type = "TextField"
+columns = 14
+[widgets.next-button]
+type = "Button"
+command = "find-next"
+
+[widgets.formatting]
+type = "ToolBar"
+children = ["font-label", "font", "size", "bold-button", "italic-button", "underline-button", "color", "color-button"]
+
+[widgets.font-label]
+type = "Label"
+text = "Font"
+[widgets.font]
+type = "ComboBox"
+items = ["Segoe UI", "Georgia", "Consolas"]
+[widgets.size]
+type = "Spinner"
+minimum = 8
+maximum = 48
+value = 11
+[widgets.bold-button]
+type = "Button"
+command = "bold"
+[widgets.italic-button]
+type = "Button"
+command = "italic"
+[widgets.underline-button]
+type = "Button"
+command = "underline"
+[widgets.color]
+type = "ComboBox"
+items = ["foreground", "accent", "#b42318", "#087a55"]
+[widgets.color-button]
+type = "Button"
+text = "Color"
+
+[widgets.editor]
+type = "RichTextPane"
+constraint = "center"
+rows = 28
+columns = 100
+editable = true
+markdown = "# SWINGSet WordPad\n\nSelect text and apply portable rich formatting."
+
+[widgets.status]
+type = "StatusBar"
+constraint = "south"
+text = "Ready"

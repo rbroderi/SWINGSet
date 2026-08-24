@@ -1,0 +1,7 @@
+{
+    "python.analysis.typeCheckingMode": "off",
+    "cSpell.words": [
+        "swingset"
+    ],
+    "python-envs.defaultEnvManager": "ms-python.python:system"
+}

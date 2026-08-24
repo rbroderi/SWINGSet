@@ -1,0 +1,102 @@
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[project]
+name = "swingset"
+version = "0.9.0"
+description = "Typed portable UI toolkit with Win32, Tkinter, and Textual backends"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+  "CairoSVG>=2.9",
+  "Pillow>=12.3.0",
+  "textual>=8.2.8",
+  "pywin32>=308; sys_platform == 'win32'",
+  "beartype>=0.22.9",
+  "markdown-it-py>=4.2.0",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Environment :: Win32 (MS Windows)",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+dev = [
+    "autopep695>=1.1.4",
+    "pyrefly>=1.2.0",
+    "rust-just>=1.58.0",
+    "basedpyright>=1.39.10",
+    "pyupgrade>=3.21.2",
+    "ruff>=0.16.4",
+    "ssort>=0.17.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "pytest-sugar>=1.1.1",
+    "fest-mutate>=0.1.3",
+    "hypothesis>=6.165.10",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    # BasedPyright owns type annotations and missing type information.
+    # Any diagnostics are intentionally disabled in both tools.
+    "ANN",
+    # BasedPyright reports unused parameters, imports, locals, and expressions.
+    "ARG",
+    "B018",
+    "F401",
+    "F841",
+    # BasedPyright reports redeclarations, undefined exports/names, and unbound locals.
+    "F811",
+    "F821",
+    "F822",
+    "F823",
+    "PLC0414",
+    # This project does not require per-file copyright notices.
+    "CPY001",
+    # Resolve mutually exclusive pydocstyle pairs selected by ALL.
+    "D203",
+    "D213",
+    # Ruff's formatter owns trailing commas.
+    "COM812",
+    "T201",
+    "TC003",
+    "TC001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "SLF001"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.basedpyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.14"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+
+[tool.pyrefly]
+python-version = "3.14.0"
+infer-with-first-use = false
+
+[tool.pyrefly.errors]
+unknown-variable-type = "ignore"
+unknown-argument-type = "ignore"
+untyped-import = "ignore"
+unknown-attribute-type = "ignore"

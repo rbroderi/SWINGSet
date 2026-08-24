@@ -1,0 +1,72 @@
+[config.app]
+name = "Customer Editor"
+entry-window = "main"
+
+[config.backend]
+preferred = "auto"
+
+[theme.colors]
+primary = "#2563eb"
+primary-text = "#ffffff"
+
+[style.defaults.Button]
+min-width = 90
+
+[style.window]
+width = 520
+height = 260
+
+[style.content]
+gap = 12
+
+[style.field]
+width = 280
+
+[style.primary]
+background = "$primary"
+foreground = "$primary-text"
+font-weight = "bold"
+
+[commands.save]
+text = "Save"
+tooltip = "Save the customer"
+shortcut = "Ctrl+S"
+
+[widgets.main]
+type = "Window"
+title = "Customer Editor"
+styles = ["window"]
+children = ["content"]
+
+[widgets.content]
+type = "VBox"
+styles = ["content"]
+children = ["heading", "name", "active", "save"]
+
+[widgets.heading]
+type = "Label"
+markdown = "**Customer**"
+
+[widgets.heading.style]
+font-size = 18
+
+[widgets.name]
+type = "TextField"
+id = "customer-name"
+styles = ["field"]
+
+[widgets.name.bind]
+text = "customer.name"
+
+[widgets.active]
+type = "CheckBox"
+text = "Active"
+selected = true
+
+[widgets.save]
+type = "Button"
+command = "save"
+styles = ["primary"]
+
+[widgets.save.style]
+min-width = 120
