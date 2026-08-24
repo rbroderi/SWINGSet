@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import math
 import queue
 import threading
 from collections.abc import Callable
@@ -56,11 +57,27 @@ from swingset.widgets import TreeView
 from .base import Backend
 from .base import Capability
 
+_CELL_WIDTH = 8
+_CELL_HEIGHT = 10
+
+
+def _logical_rect_to_cells(bounds: Rect) -> Rect:
+    return Rect(
+        bounds.x // _CELL_WIDTH,
+        bounds.y // _CELL_HEIGHT,
+        max(1, math.ceil(bounds.width / _CELL_WIDTH)),
+        max(1, math.ceil(bounds.height / _CELL_HEIGHT)),
+    )
+
+
+def _cell_size_to_logical(size: Size) -> Size:
+    return Size(size.width * _CELL_WIDTH, size.height * _CELL_HEIGHT)
+
+
 if TYPE_CHECKING:
     from typing import Protocol
 
     import textual.widget
-    from textual import events
 
     class _OffsetDocument(Protocol):
         def get_index_from_location(self, location: tuple[int, int]) -> int: ...
@@ -142,10 +159,12 @@ class TextualPeer(ComponentPeer):
 
     def set_bounds(self, bounds: Rect) -> None:
         """Set bounds."""
+        cells = _logical_rect_to_cells(bounds)
         try:
-            self.widget.styles.offset = (max(0, bounds.x), max(0, bounds.y))
-            self.widget.styles.width = max(1, bounds.width)
-            self.widget.styles.height = max(1, bounds.height)
+            self.widget.styles.position = "absolute"
+            self.widget.styles.offset = (max(0, cells.x), max(0, cells.y))
+            self.widget.styles.width = cells.width
+            self.widget.styles.height = cells.height
         except AttributeError, ValueError:
             pass
 
@@ -154,7 +173,7 @@ class TextualPeer(ComponentPeer):
         try:
             size = self.widget.content_size
             if size.width > 0 and size.height > 0:
-                return Size(size.width, size.height)
+                return _cell_size_to_logical(Size(size.width, size.height))
         except AttributeError:
             pass
         return self.component.size
@@ -555,7 +574,7 @@ class TextualBackend(Backend):
         control = cast("swingset_core.Container", component)
 
         class ResizableWindow(TextualContainer):
-            def on_resize(self, _event: events.Resize) -> None:
+            def on_resize(self, _event: object) -> None:
                 control.handle_native_resize()
 
         self.initialize()

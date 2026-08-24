@@ -10,14 +10,17 @@ from swingset import Rect
 from swingset import Size
 
 _IMAGE_PATH = Path(__file__).parents[2] / "example-layout.png"
-_IMAGE_BYTES = _IMAGE_PATH.read_bytes()
 
 
 def build() -> None:
     """Build the StaticPicture resource example."""
     frame = Frame("StaticPictureResource example")
     frame.size = Size(340, 260)
-    resource = RasterImage(_IMAGE_BYTES, size=(280, 180), source_name="layout-resource")
+    resource = RasterImage(
+        _IMAGE_PATH.read_bytes(),
+        size=(280, 180),
+        source_name="layout-resource",
+    )
     frame.add(ImageLabel(resource)).bounds = Rect(20, 20, 280, 180)
     frame.visible = True
 

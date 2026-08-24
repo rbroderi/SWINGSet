@@ -1,7 +1,11 @@
 {
+    "python.defaultInterpreterPath": "C:\\Users\\richa\\.venvs\\SWINGSet\\Scripts\\python.exe",
     "python.analysis.typeCheckingMode": "off",
     "cSpell.words": [
         "swingset"
     ],
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "terminal.integrated.env.windows": {
+        "UV_PROJECT_ENVIRONMENT": "C:\\Users\\richa\\.venvs\\SWINGSet"
+    }
 }
