@@ -17,6 +17,9 @@ pyupgrade:
 basedpyright:
     uv run --all-extras basedpyright
 
+coverage:
+    uv run --all-extras pytest --cov=swingset --cov-report=term-missing
+
 pyrefly:
     uv run --all-extras pyrefly check --min-severity warn
 

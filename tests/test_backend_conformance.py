@@ -6,6 +6,7 @@ import importlib
 from collections.abc import Callable
 from collections.abc import Iterable
 from typing import cast
+from unittest.mock import patch
 
 import pytest
 
@@ -137,6 +138,22 @@ def test_advertised_widget_capabilities_have_peers(
         if not backend.supports_component(component_type)
     ]
     assert missing == []
+
+
+def test_win32_folder_dialog_uses_modern_file_picker() -> None:
+    """The Win32 folder browser delegates to the modern folder picker."""
+    module = pytest.importorskip("swingset.backends.win32")
+    backend = module.Win32Backend()
+
+    with patch.object(
+        module,
+        "_modern_folder_dialog",
+        return_value=r"C:\Selected",
+    ) as picker:
+        result = backend.choose_folder(None, "Select folder")
+
+    assert result == r"C:\Selected"
+    picker.assert_called_once_with(0, "Select folder")
 
 
 @pytest.mark.parametrize(("module_name", "type_name"), _BACKENDS)

@@ -9,11 +9,13 @@ import queue
 from collections.abc import Callable
 from ctypes import wintypes
 from dataclasses import dataclass
-from importlib import import_module
+from typing import Any
 from typing import Final
 from typing import Protocol
 from typing import cast
+from uuid import UUID
 
+import pythoncom
 import win32api
 import win32con
 import win32gui
@@ -73,8 +75,12 @@ _SIGNED_WORD_BASE_16: Final = 0x10000
 _MAX_UNICODE_CODEPOINT: Final = 0x10FFFF
 _WM_DPICHANGED: Final = 0x02E0
 _TCIF_TEXT: Final = 0x0001
-_BIF_RETURNONLYFSDIRS: Final = 0x0001
-_BIF_NEWDIALOGSTYLE: Final = 0x0040
+_CLSCTX_INPROC_SERVER: Final = 0x1
+_FOS_PICKFOLDERS: Final = 0x20
+_FOS_FORCEFILESYSTEM: Final = 0x40
+_FOS_PATHMUSTEXIST: Final = 0x800
+_SIGDN_FILESYSPATH: Final = 0x80058000
+_ERROR_CANCELLED: Final = 0x800704C7
 _PSD_MARGINS: Final = 0x0002
 _PSD_INTHOUSANDTHSOFINCHES: Final = 0x0004
 _PD_PAGENUMS: Final = 0x0002
@@ -106,8 +112,6 @@ _CONTROL_COLOR_MESSAGES: Final = frozenset(
         win32con.WM_CTLCOLORSTATIC,
     }
 )
-type _BrowseResult = tuple[object, object, object] | None
-
 _set_window_text = cast("Callable[[int, str], None]", win32gui.SetWindowText)
 _append_menu = cast(
     "Callable[[int, int, int, str], None]",
@@ -125,6 +129,136 @@ _invalidate_rect = cast(
     "Callable[[int, tuple[int, int, int, int] | None, bool], None]",
     win32gui.InvalidateRect,
 )
+
+
+class _GUID(ctypes.Structure):
+    _fields_ = [
+        ("data1", wintypes.DWORD),
+        ("data2", wintypes.WORD),
+        ("data3", wintypes.WORD),
+        ("data4", wintypes.BYTE * 8),
+    ]
+
+    @classmethod
+    def from_string(cls, value: str) -> _GUID:
+        """Create a Windows GUID from its canonical string representation."""
+        return cls.from_buffer_copy(UUID(value).bytes_le)
+
+
+_CLSID_FILE_OPEN_DIALOG: Final = _GUID.from_string(
+    "dc1c5a9c-e88a-4dde-a5a1-60f82a20aef7"
+)
+_IID_FILE_OPEN_DIALOG: Final = _GUID.from_string("d57c7288-d4ad-4768-be02-9d969532d960")
+
+
+def _com_method(
+    interface: ctypes.c_void_p,
+    index: int,
+    result_type: Any,
+    *argument_types: Any,
+) -> Callable[..., int]:
+    vtable = ctypes.cast(
+        interface,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p)),
+    ).contents
+    prototype = ctypes.WINFUNCTYPE(
+        result_type,
+        ctypes.c_void_p,
+        *argument_types,
+    )
+    return cast("Callable[..., int]", prototype(vtable[index]))
+
+
+def _release_com(interface: ctypes.c_void_p) -> None:
+    _com_method(interface, 2, wintypes.ULONG)(interface)
+
+
+def _modern_folder_dialog(owner: int, title: str) -> str | None:
+    ole32 = ctypes.OleDLL("ole32")
+    co_create_instance = ole32.CoCreateInstance
+    co_create_instance.argtypes = [
+        ctypes.POINTER(_GUID),
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        ctypes.POINTER(_GUID),
+        ctypes.POINTER(ctypes.c_void_p),
+    ]
+    co_create_instance.restype = ctypes.c_long
+    ole32.CoTaskMemFree.argtypes = [ctypes.c_void_p]
+    ole32.CoTaskMemFree.restype = None
+
+    dialog = ctypes.c_void_p()
+    pythoncom.CoInitialize()
+    try:
+        result = co_create_instance(
+            ctypes.byref(_CLSID_FILE_OPEN_DIALOG),
+            None,
+            _CLSCTX_INPROC_SERVER,
+            ctypes.byref(_IID_FILE_OPEN_DIALOG),
+            ctypes.byref(dialog),
+        )
+        if result < 0:
+            raise ctypes.WinError(result)
+        try:
+            set_options = _com_method(
+                dialog,
+                9,
+                ctypes.c_long,
+                wintypes.DWORD,
+            )
+            options = _FOS_PICKFOLDERS | _FOS_FORCEFILESYSTEM | _FOS_PATHMUSTEXIST
+            if (result := set_options(dialog, options)) < 0:
+                raise ctypes.WinError(result)
+            set_title = _com_method(
+                dialog,
+                17,
+                ctypes.c_long,
+                wintypes.LPCWSTR,
+            )
+            if (result := set_title(dialog, title)) < 0:
+                raise ctypes.WinError(result)
+            show = _com_method(dialog, 3, ctypes.c_long, wintypes.HWND)
+            result = show(dialog, owner)
+            if result & 0xFFFFFFFF == _ERROR_CANCELLED:
+                return None
+            if result < 0:
+                raise ctypes.WinError(result)
+
+            item = ctypes.c_void_p()
+            get_result = _com_method(
+                dialog,
+                20,
+                ctypes.c_long,
+                ctypes.POINTER(ctypes.c_void_p),
+            )
+            if (result := get_result(dialog, ctypes.byref(item))) < 0:
+                raise ctypes.WinError(result)
+            try:
+                path_pointer = ctypes.c_void_p()
+                get_display_name = _com_method(
+                    item,
+                    5,
+                    ctypes.c_long,
+                    wintypes.DWORD,
+                    ctypes.POINTER(ctypes.c_void_p),
+                )
+                result = get_display_name(
+                    item,
+                    _SIGDN_FILESYSPATH,
+                    ctypes.byref(path_pointer),
+                )
+                if result < 0:
+                    raise ctypes.WinError(result)
+                try:
+                    return ctypes.wstring_at(path_pointer)
+                finally:
+                    ole32.CoTaskMemFree(path_pointer)
+            finally:
+                _release_com(item)
+        finally:
+            _release_com(dialog)
+    finally:
+        pythoncom.CoUninitialize()
 
 
 class _NativeFileDialog(Protocol):
@@ -173,22 +307,6 @@ class _NativeFontDialog(Protocol):
         ...
 
     def GetCurrentFont(self) -> dict[str, object]:  # noqa: N802
-        """Mirror pywin32's native method name."""
-        ...
-
-
-class _ShellDialogs(Protocol):
-    def SHBrowseForFolder(  # noqa: N802
-        self,
-        owner: int,
-        root: object | None,
-        title: str,
-        flags: int,
-    ) -> _BrowseResult:
-        """Mirror pywin32's native method name."""
-        ...
-
-    def SHGetPathFromIDList(self, item_id: object) -> str:  # noqa: N802
         """Mirror pywin32's native method name."""
         ...
 
@@ -2513,18 +2631,8 @@ class Win32Backend(Backend):
 
     def choose_folder(self, owner: object | None, title: str) -> str | None:
         """Show a native Win32 shell folder browser."""
-        shell = cast("_ShellDialogs", import_module("win32com.shell.shell"))
-        result = shell.SHBrowseForFolder(
-            self._owner_hwnd(owner),
-            None,
-            title,
-            _BIF_RETURNONLYFSDIRS | _BIF_NEWDIALOGSTYLE,
-        )
-        if result is None:
-            return None
-        item_id, _display_name, _image_list = result
-        path = shell.SHGetPathFromIDList(item_id)
-        return path or None
+        """Show the modern Windows file dialog configured for folder selection."""
+        return _modern_folder_dialog(self._owner_hwnd(owner), title)
 
     @staticmethod
     def _dialog_parent(owner: object | None) -> object | None:
