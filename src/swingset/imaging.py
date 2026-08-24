@@ -11,8 +11,9 @@ from typing import Final
 from typing import Protocol
 from typing import runtime_checkable
 
-import cairosvg
 from PIL import Image as PillowImage
+from resvg import render
+from resvg import usvg
 
 from .theme import Dpi
 from .theme import Theme
@@ -108,6 +109,17 @@ def _transform_png(png: bytes, tint: Color | None, opacity: int) -> bytes:
         image.putalpha(alpha)
         buffer = BytesIO()
         image.save(buffer, format="PNG")
+        return buffer.getvalue()
+
+
+def _resize_png(png: bytes, size: tuple[int, int]) -> bytes:
+    with PillowImage.open(BytesIO(png)) as source:
+        image = source.convert("RGBA")
+        if image.size == size:
+            return png
+        resized = image.resize(size, PillowImage.Resampling.LANCZOS)
+        buffer = BytesIO()
+        resized.save(buffer, format="PNG")
         return buffer.getvalue()
 
 
@@ -223,14 +235,10 @@ class SvgImage:
 
         width = max(1, Dpi.scale(logical_width, dpi))
         height = max(1, Dpi.scale(logical_height, dpi))
-        png = cairosvg.svg2png(
-            bytestring=self._svg,
-            output_width=width,
-            output_height=height,
-        )
-        if png is None:
-            msg = "SVG rasterization did not produce PNG data"
-            raise RuntimeError(msg)
+        options = usvg.Options.default()
+        options.load_system_fonts()
+        tree = usvg.Tree.from_str(self._svg.decode("utf-8"), options)
+        png = _resize_png(render(tree, (1, 0, 0, 0, 1, 0)), (width, height))
         if resolved_tint is not None or opacity_byte != _OPACITY_FULL:
             png = _transform_png(png, resolved_tint, opacity_byte)
         frame = RasterFrame(png=png, width=width, height=height, dpi=dpi)

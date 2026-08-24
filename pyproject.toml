@@ -9,7 +9,7 @@ description = "Typed portable UI toolkit with Win32, Tkinter, and Textual backen
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-  "CairoSVG>=2.9",
+  "resvg>=0.2.0",
   "Pillow>=12.3.0",
   "textual>=8.2.8",
   "pywin32>=308; sys_platform == 'win32'",
@@ -26,6 +26,9 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Typing :: Typed",
 ]
+
+[project.entry-points.pyinstaller40]
+hook-dirs = "swingset._pyinstaller:get_hook_dirs"
 
 [project.optional-dependencies]
 dev = [
@@ -79,6 +82,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "SLF001"]
+"src/swingset/_pyinstaller_hooks/hook-*.py" = ["N999"]
 
 [tool.ruff.lint.isort]
 force-single-line = true
