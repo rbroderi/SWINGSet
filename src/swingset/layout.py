@@ -142,12 +142,13 @@ class BoxLayout:
             child = slot.component
             if not child.visible:
                 continue
+            preferred = child.preferred_size
             if self.axis is self.X_AXIS:
-                child.set_bounds(position, 0, child.width, height)
-                position += child.width + self.gap
+                child.set_bounds(position, 0, preferred.width, height)
+                position += preferred.width + self.gap
             else:
-                child.set_bounds(0, position, width, child.height)
-                position += child.height + self.gap
+                child.set_bounds(0, position, width, preferred.height)
+                position += preferred.height + self.gap
 
     def _measure(
         self,

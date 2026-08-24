@@ -285,6 +285,21 @@ def test_box_layout_stacks_children_and_fills_cross_axis() -> None:
     assert second.bounds == Rect(0, 34, 300, 28)
 
 
+def test_box_layout_honors_nested_flow_layout_preferred_height() -> None:
+    """BoxLayout leaves room for a nested FlowLayout's vertical gaps."""
+    frame = Frame(context=UIContext(FakeBackend()))
+    frame.size = Size(300, 180)
+    frame.layout = swingset.BoxLayout(swingset.BoxAxis.Y)
+    panel = frame.add(Panel())
+    button = panel.add(Button("Run"))
+
+    frame.visible = True
+
+    assert panel.preferred_size == Size(106, 44)
+    assert panel.bounds == Rect(0, 0, 300, 44)
+    assert button.bounds == Rect(8, 8, 90, 28)
+
+
 def test_layout_measurement_pack_and_recursive_resize() -> None:
     """Preferred measurement packs windows and nested layouts follow resize."""
     frame = Frame(context=UIContext(FakeBackend()))
