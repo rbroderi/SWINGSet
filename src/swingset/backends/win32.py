@@ -9,10 +9,7 @@ import queue
 from collections.abc import Callable
 from ctypes import wintypes
 from dataclasses import dataclass
-from typing import Any
-from typing import Final
-from typing import Protocol
-from typing import cast
+from typing import Any, Final, Protocol, cast
 from uuid import UUID
 
 import pythoncom
@@ -26,45 +23,39 @@ import swingset.core as swingset_core
 import swingset.drawing as swingset_drawing
 import swingset.widgets as swingset_widgets
 from swingset.core import Component
-from swingset.drawing import Graphics
-from swingset.drawing import PaintSurface
-from swingset.geometry import Point
-from swingset.geometry import Rect
-from swingset.geometry import Size
+from swingset.drawing import Graphics, PaintSurface
+from swingset.geometry import Point, Rect, Size
 from swingset.imaging import ImageResource
 from swingset.menu import MenuBar
 from swingset.models import ModelEvent
-from swingset.peers import BooleanPeer
-from swingset.peers import ComponentPeer
-from swingset.peers import IntValuePeer
-from swingset.peers import PaintPeer
-from swingset.peers import PasswordPeer
-from swingset.peers import RichTextPeer
-from swingset.peers import SelectionPeer
-from swingset.peers import WindowPeer
-from swingset.theme import ColorInput
-from swingset.theme import Dpi
-from swingset.theme import Theme
-from swingset.theme import resolve_color
-from swingset.widgets import Button
-from swingset.widgets import CheckBox
-from swingset.widgets import ComboBox
-from swingset.widgets import ListBox
-from swingset.widgets import ProgressBar
-from swingset.widgets import RadioButton
-from swingset.widgets import Slider
-from swingset.widgets import TabbedPane
-from swingset.widgets import Table
-from swingset.widgets import TreeNode
-from swingset.widgets import TreeView
+from swingset.peers import (
+    BooleanPeer,
+    ComponentPeer,
+    IntValuePeer,
+    PaintPeer,
+    PasswordPeer,
+    RichTextPeer,
+    SelectionPeer,
+    WindowPeer,
+)
+from swingset.theme import ColorInput, Dpi, Theme, resolve_color
+from swingset.widgets import (
+    Button,
+    CheckBox,
+    ComboBox,
+    ListBox,
+    ProgressBar,
+    RadioButton,
+    Slider,
+    TabbedPane,
+    Table,
+    TreeNode,
+    TreeView,
+)
 
-from .base import Backend
-from .base import Capability
-from .win32_imaging import NativeImageHandle
-from .win32_imaging import render_bitmap
-from .win32_imaging import render_icon
-from .win32_support import Win32Dpi
-from .win32_support import Win32Theme
+from .base import Backend, Capability
+from .win32_imaging import NativeImageHandle, render_bitmap, render_icon
+from .win32_support import Win32Dpi, Win32Theme
 
 _CLASS_NAME: Final = "SWINGSetWindow"
 _ids = itertools.count(1_000)
@@ -122,7 +113,7 @@ _send_text_message = cast(
     win32gui.SendMessage,
 )
 _set_scroll_info = cast(
-    "Callable[[int, int, dict[str, int], bool], int]",
+    "Callable[[int, int, tuple[int, int, int, int, int, int], bool], int]",
     win32gui.SetScrollInfo,
 )
 _invalidate_rect = cast(
@@ -262,68 +253,68 @@ def _modern_folder_dialog(owner: int, title: str) -> str | None:
 
 
 class _NativeFileDialog(Protocol):
-    def SetOFNTitle(self, title: str) -> None:  # noqa: N802
+    def SetOFNTitle(self, title: str) -> None:
         """Mirror pywin32's native method name."""
         ...
 
-    def SetOFNInitialDir(self, directory: str) -> None:  # noqa: N802
+    def SetOFNInitialDir(self, directory: str) -> None:
         """Mirror pywin32's native method name."""
         ...
 
-    def DoModal(self) -> int:  # noqa: N802
+    def DoModal(self) -> int:
         """Mirror pywin32's native method name."""
         ...
 
-    def GetPathName(self) -> str:  # noqa: N802
+    def GetPathName(self) -> str:
         """Mirror pywin32's native method name."""
         ...
 
 
 class _NativeColorDialog(Protocol):
-    def DoModal(self) -> int:  # noqa: N802
+    def DoModal(self) -> int:
         """Mirror pywin32's native method name."""
         ...
 
-    def GetColor(self) -> int:  # noqa: N802
+    def GetColor(self) -> int:
         """Mirror pywin32's native method name."""
         ...
 
 
 class _NativeFontDialog(Protocol):
-    def DoModal(self) -> int:  # noqa: N802
+    def DoModal(self) -> int:
         """Mirror pywin32's native method name."""
         ...
 
-    def GetFaceName(self) -> str:  # noqa: N802
+    def GetFaceName(self) -> str:
         """Mirror pywin32's native method name."""
         ...
 
-    def GetSize(self) -> int:  # noqa: N802
+    def GetSize(self) -> int:
         """Mirror pywin32's native method name."""
         ...
 
-    def GetWeight(self) -> int:  # noqa: N802
+    def GetWeight(self) -> int:
         """Mirror pywin32's native method name."""
         ...
 
-    def GetCurrentFont(self) -> dict[str, object]:  # noqa: N802
+    def GetCurrentFont(self) -> dict[str, object]:
         """Mirror pywin32's native method name."""
         ...
 
 
 class _LogFont(Protocol):
-    lfHeight: int  # noqa: N815
-    lfWeight: int  # noqa: N815
-    lfCharSet: int  # noqa: N815
-    lfFaceName: str  # noqa: N815
+    lfHeight: int
+    lfWeight: int
+    lfCharSet: int
+    lfFaceName: str
 
 
 class _WindowClass(Protocol):
-    hInstance: int  # noqa: N815
-    lpszClassName: str  # noqa: N815
-    lpfnWndProc: Callable[[int, int, int, int], int]  # noqa: N815
-    hCursor: int  # noqa: N815
-    hbrBackground: int  # noqa: N815
+    hInstance: int
+    lpszClassName: str
+    lpfnWndProc: Callable[[int, int, int, int], int]
+    hCursor: int
+    hbrBackground: int
 
 
 class _TCITEMW(ctypes.Structure):
@@ -958,13 +949,14 @@ class Win32ScrollPeer(Win32PanelPeer):
         _set_scroll_info(
             self.hwnd,
             bar,
-            {
-                "Mask": win32con.SIF_ALL,
-                "Min": 0,
-                "Max": max(0, extent - 1),
-                "Page": max(0, page),
-                "Pos": position,
-            },
+            (
+                win32con.SIF_ALL,
+                0,
+                max(0, extent - 1),
+                max(0, page),
+                position,
+                0,
+            ),
             redraw,
         )
 
@@ -1167,7 +1159,7 @@ class Win32PaintPeer(Win32Peer, PaintPeer):
         invalidate_rect(
             self.hwnd,
             win32gui.GetClientRect(self.hwnd),
-            True,  # noqa: FBT003
+            True,
         )
 
     def on_paint(self) -> bool:

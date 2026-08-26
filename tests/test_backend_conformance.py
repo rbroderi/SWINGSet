@@ -3,49 +3,49 @@
 from __future__ import annotations
 
 import importlib
-from collections.abc import Callable
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import cast
 from unittest.mock import patch
 
 import pytest
-
-from swingset import Backend
-from swingset import BoxLayout
-from swingset import Button
-from swingset import Capability
-from swingset import CheckBox
-from swingset import ComboBox
-from swingset import Component
-from swingset import ComponentState
-from swingset import Container
-from swingset import Frame
-from swingset import GroupBox
-from swingset import ImageLabel
-from swingset import Label
-from swingset import ListBox
-from swingset import Menu
-from swingset import MenuBar
-from swingset import PaintSurface
-from swingset import Panel
-from swingset import PasswordField
-from swingset import ProgressBar
-from swingset import RadioButton
-from swingset import RichTextPane
-from swingset import ScrollPane
-from swingset import Separator
-from swingset import Slider
-from swingset import Spinner
-from swingset import SplitPane
-from swingset import StatusBar
-from swingset import TabbedPane
-from swingset import Table
-from swingset import TextArea
-from swingset import TextField
-from swingset import ToolBar
-from swingset import TreeView
-from swingset import UIContext
-from swingset import Window
+from swingset import (
+    Backend,
+    BoxLayout,
+    Button,
+    Capability,
+    CheckBox,
+    ComboBox,
+    Component,
+    ComponentState,
+    Container,
+    Frame,
+    GroupBox,
+    ImageLabel,
+    Label,
+    ListBox,
+    Menu,
+    MenuBar,
+    PaintSurface,
+    Panel,
+    PasswordField,
+    ProgressBar,
+    RadioButton,
+    RichTextPane,
+    ScrollPane,
+    Separator,
+    Slider,
+    Spinner,
+    SplitPane,
+    StatusBar,
+    TabbedPane,
+    Table,
+    TextArea,
+    TextField,
+    ToolBar,
+    TreeView,
+    UIContext,
+    Window,
+)
 
 _BACKENDS = (
     ("win32", "Win32Backend"),
@@ -138,6 +138,23 @@ def test_advertised_widget_capabilities_have_peers(
         if not backend.supports_component(component_type)
     ]
     assert missing == []
+
+
+def test_win32_scroll_peer_uses_native_scroll_info_tuple() -> None:
+    """Pass pywin32 the positional SCROLLINFO representation it requires."""
+    module = pytest.importorskip("swingset.backends.win32")
+    peer = object.__new__(module.Win32ScrollPeer)
+    peer.hwnd = 42
+
+    with patch.object(module, "_set_scroll_info") as set_scroll_info:
+        peer._set_scroll_info(module.win32con.SB_VERT, 7, 100, 20)
+
+    set_scroll_info.assert_called_once_with(
+        42,
+        module.win32con.SB_VERT,
+        (module.win32con.SIF_ALL, 0, 99, 20, 7, 0),
+        True,
+    )
 
 
 def test_win32_folder_dialog_uses_modern_file_picker() -> None:
