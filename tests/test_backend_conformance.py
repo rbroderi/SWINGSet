@@ -157,6 +157,22 @@ def test_win32_scroll_peer_uses_native_scroll_info_tuple() -> None:
     )
 
 
+def test_win32_text_update_repaints_immediately() -> None:
+    """Flush text painting without waiting for another native window event."""
+    module = pytest.importorskip("swingset.backends.win32")
+    peer = object.__new__(module.Win32Peer)
+    peer.hwnd = 42
+
+    with (
+        patch.object(module, "_set_window_text") as set_window_text,
+        patch.object(module.win32gui, "UpdateWindow") as update_window,
+    ):
+        module.Win32Peer.text.__set__(peer, "live output")
+
+    set_window_text.assert_called_once_with(42, "live output")
+    update_window.assert_called_once_with(42)
+
+
 def test_win32_folder_dialog_uses_modern_file_picker() -> None:
     """The Win32 folder browser delegates to the modern folder picker."""
     module = pytest.importorskip("swingset.backends.win32")

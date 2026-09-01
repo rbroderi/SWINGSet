@@ -631,6 +631,7 @@ class Win32Peer(ComponentPeer):
         """Set the text."""
         with contextlib.suppress(win32gui.error):
             _set_window_text(self.hwnd, value)
+            win32gui.UpdateWindow(self.hwnd)
 
     def destroy(self) -> None:
         """Update destroy."""
